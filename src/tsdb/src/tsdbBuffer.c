@@ -121,7 +121,16 @@ SListNode *tsdbAllocBufBlockFromPool(STsdbRepo *pRepo) {
 
   while (POOL_IS_EMPTY(pBufPool)) {
     pRepo->repoLocked = false;
+#ifndef NDEBUG
+    struct timespec abstime = {0, 0};
+    clock_gettime(CLOCK_REALTIME, &abstime);
+    abstime.tv_sec += (60 * 15);
+    if (pthread_cond_timedwait(&(pBufPool->poolNotEmpty), &(pRepo->mutex), &abstime) != 0) {
+      assert(0);
+    }
+#else
     pthread_cond_wait(&(pBufPool->poolNotEmpty), &(pRepo->mutex));
+#endif
     pRepo->repoLocked = true;
   }
 
