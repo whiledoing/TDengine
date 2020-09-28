@@ -170,6 +170,7 @@ SCacheObj *taosCacheInit(int32_t keyType, int64_t refreshTimeInSeconds, bool ext
   pCacheObj->freeFp = fn;
   pCacheObj->refreshTime = refreshTimeInSeconds * 1000;
   pCacheObj->extendLifespan = extendLifespan;
+  pCacheObj->itemExpireTime = -1;
 
   if (__cache_lock_init(pCacheObj) != 0) {
     taosHashCleanup(pCacheObj->pHashTable);
@@ -521,6 +522,8 @@ void taosAddToTrash(SCacheObj *pCacheObj, SCacheDataNode *pNode) {
 }
 
 void taosTrashCanEmpty(SCacheObj *pCacheObj, bool force) {
+  int64_t now = taosGetTimestampMs();
+
   __cache_wr_lock(pCacheObj);
 
   if (pCacheObj->numOfElemsInTrash == 0) {
@@ -551,6 +554,12 @@ void taosTrashCanEmpty(SCacheObj *pCacheObj, bool force) {
       doRemoveElemInTrashcan(pCacheObj, p);
       doDestroyTrashcanElem(pCacheObj, p);
     } else {
+      // any item should not live longer than the specificed expired time
+      assert(now >= pElem->pData->addedTime);
+      if (pCacheObj->itemExpireTime > 0 && ((now - pElem->pData->addedTime) > pCacheObj->itemExpireTime)) {
+        assert(0);
+      }
+
       pElem = pElem->next;
     }
   }
@@ -652,4 +661,16 @@ void taosCacheRefresh(SCacheObj *pCacheObj, __cache_free_fn_t fp) {
 
   int64_t now = taosGetTimestampMs();
   doCacheRefresh(pCacheObj, now, fp);
+}
+
+void taosCacheCheckforExpire(SCacheObj *pCacheObj, int32_t expireTimeSec) {
+  if (pCacheObj == NULL || expireTimeSec < 0) {
+    return;
+  }
+
+  if (expireTimeSec < pCacheObj->refreshTime) {
+    expireTimeSec = pCacheObj->refreshTime * 20;
+  }
+
+  pCacheObj->itemExpireTime = expireTimeSec*1000;
 }

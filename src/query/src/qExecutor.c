@@ -6986,6 +6986,7 @@ void* qOpenQueryMgmt(int32_t vgId) {
 
   pthread_mutex_init(&pQueryMgmt->lock, NULL);
 
+  taosCacheCheckforExpire(pQueryMgmt->qinfoPool, 600);
   qDebug("vgId:%d, open querymgmt success", vgId);
   return pQueryMgmt;
 }

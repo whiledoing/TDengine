@@ -75,6 +75,7 @@ typedef struct {
   uint8_t         deleting;           // set the deleting flag to stop refreshing ASAP.
   pthread_t       refreshWorker;
   bool            extendLifespan;     // auto extend life span when one item is accessed.
+  int32_t         itemExpireTime;     // maximum live time in ms in cache for object, if -1, mean never expired.
 #if defined(LINUX)
   pthread_rwlock_t lock;
 #else
@@ -168,6 +169,9 @@ void taosCacheCleanup(SCacheObj *pCacheObj);
  * @return
  */
 void taosCacheRefresh(SCacheObj *pCacheObj, __cache_free_fn_t fp);
+
+// check the query handle not released, debug purpose only
+void taosCacheCheckforExpire(SCacheObj *pCacheObj, int32_t expireTimeSec);
 
 #ifdef __cplusplus
 }
