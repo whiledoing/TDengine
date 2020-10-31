@@ -8,5 +8,5 @@ TARGET_LINK_LIBRARIES(tsdb common tutil)
 
 IF (TD_LINUX)
   # Someone has no gtest directory, so comment it
-  # ADD_SUBDIRECTORY(tests)
+  ADD_SUBDIRECTORY(tests)
 ENDIF ()
